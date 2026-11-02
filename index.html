@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Happy Birthday!</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root{--vh:1vh;--u:min(1vw,calc(var(--vh)*1.7778));--pink:#f7a8c9;--ink:#3b2a4a;--cream:#fff6e5;--accent:#ff6f91;--wood:#c98f5a}
+@supports(height:100dvh){:root{--vh:1dvh}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#2a1d38;font-family:'Press Start 2P','Courier New',monospace;color:var(--ink);overflow:hidden}
+body{position:fixed;inset:0}
+img{image-rendering:pixelated}
+button{font-family:inherit;border-radius:8px}
+
+/* ===== STAGE (ruangan) ===== */
+#stage{position:absolute;left:50%;top:50%;width:min(100vw,calc(var(--vh)*177.78));aspect-ratio:16/9;transform:translate(-50%,-50%);
+  background:linear-gradient(#f7a8c9 0 68%,#8a5a36 68% 69%,var(--wood) 69%);background-size:cover;overflow:hidden}
+.obj{position:absolute;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  user-select:none;-webkit-user-select:none;touch-action:none;transition:transform .15s}
+.obj:hover{transform:translateY(calc(var(--u)*-.4))}
+.obj .ph{font-size:calc(var(--u)*7);line-height:1}
+.obj img{width:100%;height:100%;object-fit:contain}
+.obj[data-key] .ph,.obj[data-key] .lbl,.gift .ph{visibility:hidden}
+.wish-trigger{overflow:hidden;z-index:2}
+.wish-trigger:hover{transform:none}
+.wish-trigger img{transform:scale(3.5);pointer-events:none}
+.gift,.balloon{z-index:1}
+.gift img{transform:scale(14);pointer-events:none}
+.gift.purple img{transform:scale(16)}
+.lbl{font-size:calc(var(--u)*.9);margin-top:calc(var(--u)*.5);background:#fff8;padding:2px 6px}
+.gift{cursor:grab}.gift.drag{cursor:grabbing;z-index:20;transform:scale(1.1)}
+.gift .ph{font-size:calc(var(--u)*5)}
+
+/* kue + lilin (placeholder CSS) */
+#cake .tier{background:#ffe0ef;border:3px solid var(--ink);height:calc(var(--u)*3.5)}
+#cake .t1{width:calc(var(--u)*10)}#cake .t2{width:calc(var(--u)*13);background:#ff9ec4}
+#cake .candle{width:calc(var(--u)*.9);height:calc(var(--u)*3);background:#fff;border:2px solid var(--ink);position:relative;margin-bottom:-2px}
+.flame{position:absolute;left:50%;bottom:100%;margin-left:calc(var(--u)*-.6);width:calc(var(--u)*1.2);height:calc(var(--u)*2.2);
+  background:radial-gradient(#fff 10%,#ffe14d 45%,#ff8a00 85%);border-radius:50% 50% 50% 50%/65% 65% 35% 35%;
+  box-shadow:0 0 calc(var(--u)*2) #ffb300;transform-origin:50% 100%;animation:sway .45s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-7deg) scaleY(.92)}to{transform:rotate(8deg) scaleY(1.1)}}
+#cake.out .flame{animation:none;background:#6b6b6b;box-shadow:none;height:calc(var(--u)*.7);opacity:.55;border-radius:2px}
+#cake.out{cursor:default}
+#cake:hover{transform:none}
+#cake img.cake-sprite{position:absolute;inset:0;transform:scale(10);pointer-events:none}
+#cake img.cake-flame{position:absolute;left:var(--flame-left);top:-7%;width:16%;height:28%;transform:scale(7);pointer-events:none}
+#cake.out img.cake-flame{animation:flame-out .4s ease-out forwards}
+@keyframes flame-out{to{opacity:0;transform:translateY(-20%) scale(1)}}
+#cake.out img.cake-sprite{filter:brightness(.9)}
+#cake .candle,#cake .tier{display:none}
+
+/* balon */
+.balloon{cursor:pointer}
+.bal{
+  position:relative;width:100%;height:100%;display:flex;flex-direction:column;align-items:center;transform-origin:50% 100%;
+  animation:bsway 5s ease-in-out infinite;animation-delay:var(--d,10s);
+  will-change: transform;
+}
+
+.balloon .bal img{width:100%;height:100%;object-fit:contain;transform:scale(14);pointer-events:none}
+
+.bal .body{display:block;width:72%;aspect-ratio:.82;background:var(--c);border:3px solid var(--ink);border-radius:50% 50% 50% 50%/58% 58% 42% 42%;
+  box-shadow:inset calc(var(--u)*-.5) calc(var(--u)*-.5) 0 #0002,inset calc(var(--u)*.5) calc(var(--u)*.5) 0 #fff6}
+
+.bal .str{display:block;width:3px;flex:1;background:var(--ink);opacity:.6}
+
+@keyframes bsway{
+  0%, 100% {
+    transform: translateY(0px); /* Posisi awal diam di bawah */
+  }
+  50% {
+    transform: translateY(calc(var(--u)*-1.2));
+  }
+}
+
+.balloon.pop .bal{animation:none}
+.balloon.pop:not(.hasimg) .bal>*{display:none}
+.balloon.pop::after{content:'💥';position:absolute;left:50%;top:28%;width:calc(var(--u)*5);height:calc(var(--u)*5);display:grid;place-items:center;font-size:calc(var(--u)*2);line-height:1;animation:burst .45s ease-out forwards;z-index:2}
+@keyframes burst{from{transform:translate(-50%,-50%) scale(.3);opacity:1}to{transform:translate(-50%,-50%) scale(1.8);opacity:0}}
+@keyframes pop-away{to{transform:scale(1.8);opacity:0}}
+.balloon.gone{display:none}
+
+/* pesan putar ke landscape */
+#rotate{display:none;position:fixed;inset:0;z-index:300;background:var(--ink);color:#fff;place-items:center;text-align:center;padding:24px}
+#rotate span{font-size:48px;display:block;margin-bottom:18px;animation:turn 2.4s ease-in-out infinite}
+#rotate p{font-size:11px;line-height:1.9;margin:0}
+@keyframes turn{0%,30%{transform:rotate(0)}65%,100%{transform:rotate(-90deg)}}
+@media (orientation:portrait) and (max-width:900px){#rotate{display:grid}}
+
+/* ===== OVERLAY & PANEL ===== */
+#ov{position:fixed;inset:0;background:rgba(30,15,40,.72);display:none;place-items:center;z-index:50;padding:12px}
+#ov.on{display:grid}
+.panel{display:none;width:min(94vw,640px);max-height:calc(var(--vh)*94);overflow:auto}
+.panel.on{display:block;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}
+.card{background:var(--cream);border:4px solid var(--ink);border-radius:12px;box-shadow:6px 6px 0 var(--ink);padding:18px}
+h2{font-size:14px;line-height:1.6;margin:0;text-align:center}
+.btn{font-size:11px;padding:10px 14px;background:var(--accent);color:#fff;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);cursor:pointer}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.sm{font-size:9px;padding:6px 10px;background:#fff;color:var(--ink)}
+.btns{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:16px}
+.row{display:flex;gap:12px;margin-top:14px}
+.row>*{flex:1;min-width:0}
+.letter{background:#fff;border:3px solid var(--ink);padding:12px;font-size:10px;line-height:1.9;white-space:pre-line;max-height:calc(var(--vh)*42);overflow:auto}
+.photo{border:3px solid var(--ink);background:#fff;align-self:flex-start}
+.photo img{width:100%;display:block}
+@media(max-width:520px){.row{flex-direction:column}}
+
+/* phone */
+.notif{background:#fff;border:3px solid var(--ink);padding:14px;display:flex;gap:12px;align-items:flex-start;font-size:11px;line-height:1.9;white-space:pre-line;animation:ring .5s}
+.notif b{font-size:26px}
+@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-4deg)}40%{transform:rotate(4deg)}60%{transform:rotate(-3deg)}80%{transform:rotate(3deg)}}
+
+/* bingkai foto */
+.viewer{position:relative;width:100%;height:min(calc(var(--vh)*58),420px);margin:0 auto;background:#222;border:3px solid var(--ink);overflow:hidden;touch-action:none}
+.viewer.zin{animation:zin 1s ease-out}
+@keyframes zin{from{transform:scale(.15);opacity:0}to{transform:none;opacity:1}}
+.viewer img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transform-origin:50% 50%;user-select:none;-webkit-user-drag:none}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+
+/* turntable */
+.songs{list-style:none;margin:14px 0 0;padding:0;display:grid;gap:8px}
+.songs button{width:100%;text-align:left;font-size:10px;line-height:1.7;padding:10px 12px;background:#fff;border:3px solid var(--ink);cursor:pointer}
+.songs button:hover{background:var(--pink)}
+.disc{display:block;text-align:center;font-size:30px;animation:spin 15s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* photobooth */
+.panel.full{width:100vw;max-height:none;height:calc(var(--vh)*100);background:#111;position:relative}
+#cam{position:absolute;inset:0 0 70px 0;display:grid;place-items:center}
+#cam video,#cam img{max-width:100%;max-height:100%}
+#cam video.mirror{transform:scaleX(-1)}
+#count{position:absolute;inset:0 0 70px 0;display:grid;place-items:center;color:#fff;font-size:min(30vw,160px);text-shadow:4px 4px 0 var(--ink);pointer-events:none}
+#bmsg{position:absolute;top:12px;left:0;right:0;text-align:center;color:#fff;font-size:10px;line-height:1.8;padding:0 12px}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#flash.on{animation:fl .35s}@keyframes fl{from{opacity:.9}to{opacity:0}}
+.bar{position:absolute;left:0;right:0;bottom:0;height:70px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 14px}
+.bar .r{justify-self:end}
+
+/* start */
+#start{position:fixed;inset:0;z-index:100;background:var(--pink);display:grid;place-items:center;text-align:center;cursor:pointer;padding:20px}
+#start h1{font-size:clamp(16px,4vw,28px);line-height:1.2;margin:0}
+#start h2{line-height:1.2}
+#start p{font-size:11px;margin:12px 0 0;animation:blink 1s steps(2) infinite}@keyframes blink{50%{opacity:0}}
+@media(prefers-reduced-motion:reduce){*:not(.disc):not(.bal):not(#start p){animation-duration:.01s!important}}
+
+  /* ===== CSS MAKE A WISH DI SINI ===== */
+  .wish-box textarea {
+    width: 100%;
+    height: 90px;
+    background: #fff;
+    border: 3px solid var(--ink);
+    padding: 10px;
+    font-family: inherit;
+    font-size: 9px;
+    resize: none;
+    outline: none;
+    margin-top: 10px;
+    color: var(--ink);
+  }
+  .wish-box textarea::placeholder {
+    color: #a89bb6;
+  }
+  #p-wish .card {
+    text-align: left;
+  }
+  #v-overlay {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: var(--pink);
+    display: none;
+    place-items: center;
+    z-index: 1000;
+    flex-direction: column;
+    padding: 24px;
+  }
+  #v-overlay.on {
+    display: flex;
+  }
+  #v-overlay::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    background: #fff36a;
+    opacity: 0;
+    pointer-events: none;
+  }
+  #v-overlay.flash::before {
+    animation: wish-flash .7s ease-out forwards;
+  }
+  @keyframes wish-flash {
+    0%{opacity:0}
+    25%{opacity:1}
+    100%{opacity:0}
+  }
+  #v-overlay h2,
+  #v-overlay video,
+  #v-overlay #wish-save-feedback,
+  #v-overlay #wish-finish {
+    position: absolute;
+  }
+  #v-overlay video {
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    mix-blend-mode: multiply;
+    pointer-events: none;
+  }
+  #v-overlay.flash video,
+  #v-overlay.revealed video {
+    opacity: 0;
+    transition: opacity .2s ease-out;
+  }
+  #v-overlay h2 {
+    top: 50%;
+    left: 50%;
+    z-index: 1;
+    color: #fff;
+    font-size: clamp(14px, 2.4vw, 24px);
+    text-align: center;
+    line-height: 1.8;
+    font-family: 'Press Start 2P', monospace;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(2.5);
+    text-shadow: 3px 3px 0 var(--ink);
+  }
+  #v-overlay.revealed h2 {
+    animation: wish-zoom-out 1.1s cubic-bezier(.16,.8,.3,1) forwards;
+  }
+  @keyframes wish-zoom-out {
+    to{opacity:1;transform:translate(-50%, -50%) scale(1)}
+  }
+  #p-wish .card{width:min(94vw,560px);padding:22px}
+  #p-wish h2{margin-bottom:18px}
+  #wish-form{display:flex;flex-direction:column;gap:10px}
+  #wish-form label{font-size:10px;line-height:1.6}
+  #wish-form textarea{display:block;width:100%;height:130px;background:#fff;border:3px solid var(--ink);padding:12px;
+    font:10px/1.8 'Press Start 2P',monospace;resize:vertical;color:var(--ink)}
+  #wish-form textarea::placeholder{color:#a89bb6}
+  #wish-status{min-height:1.8em;margin:0;font-size:9px;line-height:1.8}
+  #wish-form .btns{margin-top:4px}
+  #v-overlay #wish-finish{display:none;z-index:3;bottom:8vh;margin:0}
+  #v-overlay.show-continue #wish-finish{display:block}
+  #wish-save-feedback{z-index:3;bottom:17vh;max-width:min(90vw,760px);margin:0;color:#fff;font-size:9px;line-height:1.8;text-align:center;text-shadow:1px 1px 2px var(--ink)}
+
+</style>
+</head>
+<body>
+
+<div id="start"><div><h1>KNOCK KNOCK</h1><h2>Who's There?</h2><p>Tap for a surprise!</p></div></div>
+
+<div id="rotate"><div><span>📱</span><p>Round your phone to landscape mode<br>to see the surprise</p></div></div>
+
+<!-- ===== RUANGAN ===== -->
+<div id="stage">
+  <div class="obj" data-key="frame"     id="o-frame"  style="left:1%;top:19%;width:10%;height:20%"><span class="ph">🖼️</span><i class="lbl">frame</i></div>
+  <div class="obj frame-right" id="o-frame-right" aria-label="Bingkai foto kanan" role="button" tabindex="0"
+       style="left:88%;top:18%;width:11%;height:21%"></div>
+  <div class="obj" data-key="booth"     id="o-booth"  style="left:79%;top:35%;width:13%;height:38%"><span class="ph">📷</span><i class="lbl">photobooth</i></div>
+  <div class="obj" data-key="phone"     id="o-phone"  style="left:55%;top:58%;width:6%;height:7%"><span class="ph">📱</span><i class="lbl">phone</i></div>
+  <div class="obj" data-key="turntable" id="o-table"  style="left:7%;top:38%;width:11%;height:34%"><span class="ph">💿</span><i class="lbl">turntable</i></div>
+  <div class="obj" id="cake" style="left:44%;top:47%;width:11%;height:20%">
+    <div class="candle"><b class="flame"></b></div><div class="tier t1"></div><div class="tier t2"></div>
+  </div>
+  <div class="obj wish-trigger" data-key="wish" id="o-wish" aria-label="One Wish Willow" role="button" tabindex="0"
+       style="left:38%;top:48%;width:6%;height:26%"><span class="ph">🎟️</span></div>
+  <!-- Area klik lima kado yang sudah terlihat pada gambar latar -->
+  <div class="obj gift" data-key="gift" style="left:4%;top:77%;width:7%;height:14%"><span class="ph">🎁</span></div>
+  <div class="obj gift" data-key="gift" style="left:10%;top:77%;width:7%;height:14%"><span class="ph">🎁</span></div>
+  <div class="obj gift" data-key="gift" style="left:82%;top:77%;width:7%;height:14%"><span class="ph">🎁</span></div>
+  <div class="obj gift" data-key="gift" style="left:88%;top:77%;width:7%;height:14%"><span class="ph">🎁</span></div>
+  <div class="obj gift purple" data-key="gift" style="left:94%;top:77%;width:6%;height:14%"><span class="ph">🎁</span></div>
+  <!-- Area klik lima balon yang sudah terlihat pada gambar latar -->
+  <div class="obj balloon" style="left:17%;top:21%;width:6%;height:23%;--c:#ff5c8a;--d:-.2s"><div class="bal"><i class="body"></i><i class="str"></i></div></div>
+  <div class="obj balloon" style="left:23%;top:38%;width:6%;height:21%;--c:#ffc93c;--d:-.9s"><div class="bal"><i class="body"></i><i class="str"></i></div></div>
+  <div class="obj balloon" style="left:26%;top:23%;width:6%;height:23%;--c:#f35ca7;--d:-1.5s"><div class="bal"><i class="body"></i><i class="str"></i></div></div>
+  <div class="obj balloon" style="left:66%;top:34%;width:6%;height:23%;--c:#7bd957;--d:-.5s"><div class="bal"><i class="body"></i><i class="str"></i></div></div>
+  <div class="obj balloon" style="left:70%;top:23%;width:6%;height:23%;--c:#b388ff;--d:-1.2s"><div class="bal"><i class="body"></i><i class="str"></i></div></div>
+</div>
+
+<!-- ===== OVERLAY ===== -->
+<div id="ov">
+
+  <!-- 1. kotak kado -->
+  <section class="panel" id="p-gift"><div class="card">
+    <h2 id="g-title"></h2>
+    <div style="text-align:center;margin-top:10px"><button class="btn sm" data-close>close</button></div>
+    <div class="row"><div class="letter" id="g-letter"></div><div class="photo"><img id="g-photo" alt=""></div></div>
+  </div></section>
+
+  <!-- 3. phone -->
+  <section class="panel" id="p-phone"><div class="card">
+    <div class="notif"><b>📱</b><span id="ph-text"></span></div>
+    <div class="btns"><button class="btn" id="b-call">call</button><button class="btn" data-close>back</button></div>
+  </div></section>
+
+  <!-- 4. bingkai foto -->
+  <section class="panel" id="p-frame"><div class="card">
+    <h2 id="f-title">Bingkai Foto</h2>
+    <div class="viewer" id="viewer"><img id="f-img" alt="" draggable="false"></div>
+    <div class="btns">
+      <div class="tools">
+        <button class="btn sm" id="f-out">-</button><button class="btn sm" id="f-in">+</button>
+      </div>
+      <button class="btn" data-close>back</button>
+    </div>
+  </div></section>
+
+  <!-- 5. photobooth -->
+  <section class="panel full" id="p-booth">
+    <div id="bmsg"></div>
+    <div id="cam"><video id="vid" autoplay playsinline muted></video><img id="result" hidden alt="Hasil photobooth"></div>
+    <div id="count"></div><div id="flash"></div>
+    <div class="bar">
+      <div><button class="btn" id="b-start">start</button></div>
+      <button class="btn" id="b-dl" disabled>download</button>
+      <div class="r"><button class="btn" data-close>back</button></div>
+    </div>
+  </section>
+
+  <!-- 6. turntable -->
+  <section class="panel" id="p-table"><div class="card">
+    <span class="disc">💿</span><h2>Pilih lagu</h2>
+    <ul class="songs" id="songs"></ul>
+    <div class="btns" style="justify-content:flex-end"><button class="btn" data-close>back</button></div>
+  </div></section>
+
+  <section class="panel" id="p-wish"><div class="card">
+    <h2>Make A Wish</h2>
+    <form id="wish-form">
+      <label for="wish-text" class="lbl">
+      <textarea id="wish-text" name="wish" maxlength="500" placeholder="Write your wish..." required></textarea>
+      <p id="wish-status" role="status" aria-live="polite"></p>
+      <div class="btns">
+        <button class="btn sm" type="button" data-close>back</button>
+        <button class="btn" id="wish-submit" type="submit">Break it</button>
+      </div>
+    </form>
+  </div></section>
+
+</div>
+
+<div id="v-overlay" role="dialog" aria-modal="true" aria-labelledby="wish-result-title">
+  <h2 id="wish-result-title">Your Wish Will Come True</h2>
+  <video id="wish-break-video" playsinline preload="auto"></video>
+  <p id="wish-save-feedback" role="status" aria-live="polite"></p>
+  <button class="btn" id="wish-finish">Continue</button>
+</div>
+
+<script>
+/* =====================================================
+   ✏️  EDIT BAGIAN INI SAJA
+   ===================================================== */
+const CONFIG = {
+  // nomor WhatsApp: format internasional tanpa + dan tanpa 0 di depan
+  whatsapp: '6281234567890',
+  waText: 'hi cicik, sehat selalu',
+
+  // teks di telepon
+phoneText: `Hewwoo!
+\nHappy Birthday Bisan. Sebelumnya cicik minta maaf ya kalau tulisan ini agak berantakan. Cicik mau tau dong apa aja wishlist Bisan yang belum kecentang sebelum menginjak kepala dua (?), semoga semua yang belum tercentang itu bisa hijau sebelum new year yah. Cicik harap semua yang Bisan mau jalanin setelah umur 20 ini bisa Bisan tempuh dengan mudah, semua tantangan ada solusinya, semua rintangan ada yang nemenin, semua jalan buntu bisa ada titik terangnya, perjuangan Bisan lancar diiringi doa-doa orang baik di sekitar Bisan maupun yang ngga deket Bisan saat ini. 
+Cicik bangga punya Bisan. Semoga keputusan kita kali ini bisa jadi keputusan terbaik di hidup Bisan, sehingga Bisan bisa lebih mudah dan bebas untuk kenal dunia lebih luas lagi. Terimakasih udah jadi orang hebat dan kuat, makasih selalu jadi penolong buat semua orang bahkan mereka yang selalu jadi antagonis di cerita orang lain, tapi kamu ga pernah pandang bulu untuk bisa nolong orang lain. Aku masih inget prinsip kamu, "Selama kita masih mampu, tolong", I get it. Semenjak kita udah ga bareng, aku selalu nyempetin buat bisa bantu orang. Sekarang waktu luang aku, aku isi buat bantu orang bahkan yang randomly lewat. Walau mungkin ga sengaruh itu buat mereka, but at least aku bisa bantu. 
+\nTerimakasih karena udah selalu ada buat aku dan siapapun, walau pas kamu lagi hectic-hectic-nya sama semua kesibukan itu. Terimakasih karena selalu menuhin ekspektasi aku, walau kadang kamu jadi repot banget cuma demi ada buat aku. Jujur aku ngerasa bersyukur banget sekaligus segan sama kamu karena selalu berusaha buat ngasih waktu, tenaga, pikiran, duit buat kita bisa selalu bersama. Aku mau berterimakasih banyak-banyak karena kamu udah jadi orang baik dan berhasil bikin aku selalu merasa dicintai kapanpun dan dimanapun, that's my why aku sayang dan loving you (idk bakal sampai kapan). 
+My biggest thanks juga karena waktu aku pulang kemaren, kamu ternyata sengaja nyisihin duit biar kita bisa kulineran dan quality time rutin hampir setiap hari selama aku ada di rumah. Dan waktu beberapa minggu sebelum aku balik ke Bogor, kamu malah minta maaf karena ga bisa ngajak aku main jauh-jauh selama aku di rumah, tapi ternyata setelah itu kamu ajakin aku keliling jauh-jauh ke tempat yang aku mau. Walau sometimes ada struggle, tapi aku bener-bener ngerasa kamu tuh emang beneran buat aku. Kamu mau dan rela motoran jauh-jauh, luangin waktu, tenaga, dan duit lagi biar aku bisa dapet apa yang ga bisa aku dapetin selama di Bogor. 
+You're the kindest person I've ever met setelah ibu. Cicik harap kebaikan murni Bisan awet ya sampai kapanpun walau cicik udah ga bisa tau lagi apa yang Bisan sedang dan bakal lalui nanti. 
+\nMaaf kalau aku masih ga bisa rangkai kata-kata dengan baik. Sebenarnya masih banyak lagi yang harus aku bilang, tapi keburu limit vocabulary-nya haha. Intinya, semua yang cicik bilang tadi sebuah bentuk biggest love cicik buat Bisan. Terimakasih yaa. Glad to see you and being a part of your life selama hampir 3 tahun ini. See you on top, I will miss you. Semangat sulung
+\n~Cicik`,
+
+  // 5 kotak kado
+  gifts: [
+    { from: 'Ama', letter: `Yaumul milad ihsan ..
+Barakallah fii umrik nak..
+Semoga ihsan makin taat ibadahnya,tdk pernah meninggalkan shalat maupun membaca alquran
+makin dewasa dan Bersungguh sungguh kuliah utk masa depan ihsan.
+Doa terbaik ama selalu utk ihsan ..
+Amin🤲`, photo: 'photos/photo2.png' },   // photo: 'photos/g1.jpg'
+    { from: 'Fikri', letter: 'taragak makan nasi den san', photo: 'photos/photo1.jpeg' },
+    { from: 'Zikri', letter: `oppp tambah gaekk daa, semoga tambah panjang iduik , tambah jagok main koa boss ,
+
+#jan ma ambua ka ngarai`, photo: 'photos/photo3.jpeg' },
+    { from: 'Arif', letter: 'san gw orangnya gabisa rangkai kata" kaya yang keren" gitu tp hbd ya, smoga smua hal yg lu inginkan bisa tercapai dah sehat selalu, bismillah persahabatan kita terjaga sampai kapanpun itu 😅🤭🥰', photo: 'photos/photo4..jpeg' },
+    { from: 'Ara Diva', letter: 'keep growing through what you go through, and may life always have beautiful things in store for you', photo: 'photos/photo5.jpeg' }
+  ],
+
+  // Satu foto untuk tiap bingkai
+  frameLeft: 'photos/frame1.png',
+  frameRight: 'photos/frame2.png',
+
+  // photobooth
+  boothFooter: 'Happy Birthday!',
+  mirrorPreview: true,        // pratinjau kamera seperti cermin; hasil foto TETAP tidak mirror
+
+  // turntable (opsi B: buka Spotify). Kosongkan url = pencarian Spotify otomatis.
+  songs: [
+    { title: 'Nothing - Bruno Major', url: 'https://open.spotify.com/track/1lORkxEMmsCZqhoxcmk3A3?si=f7c5f614b87b4175' },        // url: 'https://open.spotify.com/track/xxxx'
+    { title: 'Puan Bermain Hujan - Payung Teduh', url: 'https://open.spotify.com/track/3EwuBUGd74g0h6i5ek0PS5?si=71071fc63a4f46a5' },
+    { title: 'Bulan Yang Baik - Sal Priadi', url: 'https://open.spotify.com/track/5IgZ9Y4B9Dsi3VtIJSB75e?si=d3e5f78cf41846a9' },
+    { title: 'Transform (feat. Charlotte Day Wilson) - Daniel Caesar, Charlotte Day Wilson', url: 'https://open.spotify.com/track/1K6oXSGIexEyNnv2cS6vKr?si=b42c68097b5d4bbe' },
+    { title: 'Diam Diam Ku Bawa 1 - Fourtwnty', url: 'https://open.spotify.com/track/0uz4VSHiOuz4yRLfZxYHi6?si=4880f1341f7d4010' }
+  ],
+
+  // suara: isi path audio, kosong = pakai suara sintetis bawaan
+  sfx: { open: '', blow: '', notif: '', pop: '', bgm: '' },   // contoh: open: 'sfx/buka.mp3'
+
+  // Supabase project settings (gunakan anon/publishable key, jangan service-role key)
+  supabaseUrl: 'https://pankwioqlgsrpcnczjvw.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhbmt3aW9xbGdzcnBjbmN6anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI5MDk3NTMsImV4cCI6MjEwODQ4NTc1M30.6BmbflX9ZhN4wG2-vkgdZ3-1AIdGLA1HxeaSeHAL7rA',
+  wishBreakVideo: 'sfx/wood_break_3s.mp4',
+
+  // Sprite terpisah di atas latar bg.webp
+  assets: {
+    room: 'img/bg.webp',
+    photoboothFrame: 'img/photoboothframe.webp',
+    gifts: ['img/kado1.webp', 'img/kado2.webp', 'img/kado3.webp', 'img/kado4.webp', 'img/kado5.webp'],
+    balloons: ['img/balon1.webp', 'img/balon2.webp', 'img/balon3.webp', 'img/balon4.webp', 'img/balon5.webp'],
+    cakeOn: 'img/cake.webp',
+    flameFrames: ['img/api1.webp', 'img/api2.webp', 'img/api3.webp'],
+    phone: '', frame: '', booth: '', turntable: '', cakeOff: '', balloonPop: '',
+    wish: 'img/wishwillow.webp'
+  }
+};
+/* ===================================================== */
+
+const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ph = (t, c = '#f7a8c9') => 'data:image/svg+xml,' + encodeURIComponent(
+  `<svg xmlns='http://www.w3.org/2000/svg' width='640' height='480'><rect width='100%' height='100%' fill='${c}'/><text x='50%' y='50%' font-size='40' text-anchor='middle' fill='white' font-family='monospace'>${t}</text></svg>`);
+
+/* ---------- AUDIO ---------- */
+let ac;
+const AC = () => ac || (ac = new (window.AudioContext || window.webkitAudioContext)());
+function tone(f, t0, d, type = 'square', v = .12) {
+  const a = AC(), o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+  o.type = type; o.frequency.value = f;
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(.001, t + d);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + d);
+}
+function noise(d, f0, f1) {
+  const a = AC(), n = a.sampleRate * d, b = a.createBuffer(1, n, a.sampleRate), x = b.getChannelData(0);
+  for (let i = 0; i < n; i++) x[i] = (Math.random() * 2 - 1) * (1 - i / n);
+  const s = a.createBufferSource(); s.buffer = b;
+  const f = a.createBiquadFilter(); f.type = 'bandpass';
+  f.frequency.setValueAtTime(f0, a.currentTime); f.frequency.linearRampToValueAtTime(f1, a.currentTime + d);
+  const g = a.createGain(); g.gain.value = .9;
+  s.connect(f).connect(g).connect(a.destination); s.start();
+}
+const SYNTH = {
+  open()  { [330, 440, 550, 660].forEach((f, i) => tone(f, i * .07, .16)); },
+  blow()  { noise(.9, 700, 200); },
+  pop()   { noise(.12, 3500, 1200); tone(160, 0, .09, 'square', .2); },
+  notif() { tone(880, 0, .12, 'sine', .2); tone(1175, .15, .22, 'sine', .2); }
+};
+function sfx(name) {
+  const url = CONFIG.sfx[name];
+  if (url) new Audio(url).play().catch(() => {}); else SYNTH[name]();
+}
+
+/* ---------- ASET PLACEHOLDER -> GAMBAR ASLI ---------- */
+if (CONFIG.assets.room) $('#stage').style.backgroundImage = `url(${CONFIG.assets.room})`;
+$$('.obj[data-key]').forEach(el => {
+  const src = CONFIG.assets[el.dataset.key];
+  if (src) el.innerHTML = `<img src="${src}" alt="" draggable="false">`;
+});
+
+/* ---------- OVERLAY ---------- */
+const ov = $('#ov');
+function show(id) { $$('.panel').forEach(p => p.classList.remove('on')); $('#p-' + id).classList.add('on'); ov.classList.add('on'); }
+function closeAll() {
+  ov.classList.remove('on'); $$('.panel').forEach(p => p.classList.remove('on'));
+  stopCam(); closeWishResult();
+}
+$$('[data-close]').forEach(b => b.addEventListener('click', closeAll));
+ov.addEventListener('pointerdown', e => { if (e.target === ov) closeAll(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+
+/* ---------- START ---------- */
+$('#start').addEventListener('click', () => {
+  try { AC().resume(); } catch (e) {}
+  if (CONFIG.sfx.bgm) { const m = new Audio(CONFIG.sfx.bgm); m.loop = true; m.volume = .3; m.play().catch(() => {}); }
+  $('#start').remove();
+});
+
+/* ---------- 1. KOTAK KADO (drag & klik) ---------- */
+function makeDraggable(el, onClick) {
+  let startX = 0, startY = 0, startLeft = 0, startTop = 0, moved = false, dragging = false;
+  el.addEventListener('pointerdown', e => {
+    if (e.button !== undefined && e.button !== 0) return;
+    dragging = true;
+    moved = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = el.offsetLeft;
+    startTop = el.offsetTop;
+    el.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  el.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!moved && Math.abs(dx) + Math.abs(dy) > 6) {
+      moved = true;
+      el.classList.add('drag');
+    }
+    if (!moved) return;
+    const stage = $('#stage');
+    const x = clamp(startLeft + dx, 0, stage.clientWidth - el.offsetWidth);
+    const y = clamp(startTop + dy, 0, stage.clientHeight - el.offsetHeight);
+    el.style.left = `${x / stage.clientWidth * 100}%`;
+    el.style.top = `${y / stage.clientHeight * 100}%`;
+  });
+  const finishDrag = () => {
+    if (!dragging) return;
+    dragging = false;
+    el.classList.remove('drag');
+    if (!moved) onClick();
+  };
+  el.addEventListener('pointerup', finishDrag);
+  el.addEventListener('pointercancel', () => {
+    dragging = false;
+    el.classList.remove('drag');
+  });
+}
+$$('.gift').forEach((g, i) => {
+  const src = CONFIG.assets.gifts[i];
+  if (src) g.innerHTML = `<img src="${src}" alt="" draggable="false">`;
+  makeDraggable(g, () => openGift(i));
+});
+
+/* ---------- BALON (drag & klik = meletus) ---------- */
+$$('.balloon').forEach((b, i) => {
+  const src = (CONFIG.assets.balloons || [])[i];
+  if (src) { b.querySelector('.bal').innerHTML = `<img src="${src}" alt="" draggable="false">`; b.classList.add('hasimg'); }
+  makeDraggable(b, () => popBalloon(b));
+});
+function popBalloon(b) {
+  if (b.classList.contains('pop')) return;
+  b.classList.add('pop'); sfx('pop');
+  if (CONFIG.assets.balloonPop && b.querySelector('img')) b.querySelector('img').src = CONFIG.assets.balloonPop;
+  setTimeout(() => b.classList.add('gone'), 600);
+}
+function openGift(i) {
+  const d = CONFIG.gifts[i];
+  $('#g-title').textContent = 'A Present From ' + d.from;
+  $('#g-letter').textContent = d.letter;
+  $('#g-photo').src = d.photo || ph('Foto ' + (i + 1));
+  sfx('open'); show('gift');
+}
+
+/* ---------- 2. KUE (tiup lilin) ---------- */
+const cake = $('#cake');
+if (CONFIG.assets.cakeOn) {
+  const flames = [22, 34, 47, 60].map(left =>
+    `<img class="cake-flame" style="--flame-left:${left}%" src="${CONFIG.assets.flameFrames[0]}" alt="" draggable="false">`
+  ).join('');
+  cake.innerHTML = `<img class="cake-sprite" src="${CONFIG.assets.cakeOn}" alt="" draggable="false">${flames}`;
+}
+let flameFrame = 0;
+const flameTimer = CONFIG.assets.flameFrames.length > 1
+  ? setInterval(() => {
+      if (cake.classList.contains('out')) return;
+      flameFrame = (flameFrame + 1) % CONFIG.assets.flameFrames.length;
+      cake.querySelectorAll('.cake-flame').forEach(flame => { flame.src = CONFIG.assets.flameFrames[flameFrame]; });
+    }, 160)
+  : null;
+cake.addEventListener('click', () => {
+  if (cake.classList.contains('out')) return;
+  cake.classList.add('out');
+  if (flameTimer) clearInterval(flameTimer);
+  if (CONFIG.assets.cakeOff) cake.querySelector('.cake-sprite').src = CONFIG.assets.cakeOff;
+  sfx('blow');
+});
+
+/* ---------- 3. PHONE ---------- */
+$('#o-phone').addEventListener('click', () => {
+  $('#ph-text').textContent = CONFIG.phoneText;
+  sfx('notif'); show('phone');
+});
+$('#b-call').addEventListener('click', () => {
+  window.open(`https://wa.me/${6283194615790}?text=${encodeURIComponent(CONFIG.waText)}`, '_blank', 'noopener');
+});
+
+/* ---------- 4. BINGKAI FOTO (satu foto + zoom) ---------- */
+const F = { i: 0, s: 1, x: 0, y: 0 }, fimg = $('#f-img'), viewer = $('#viewer'), ptrs = new Map();
+let pinch = 0;
+function applyF() {
+  if (F.s <= 1) { F.s = 1; F.x = F.y = 0; }
+  fimg.style.transform = `translate(${F.x}px,${F.y}px) scale(${F.s})`;
+}
+function zoomF(k) { F.s = clamp(F.s * k, 1, 6); applyF(); }
+function fitFrameToPhoto() {
+  if (!fimg.naturalWidth || !fimg.naturalHeight) return;
+  const maxWidth = viewer.parentElement.clientWidth;
+  const maxHeight = Math.min(innerHeight * .58, 420);
+  const scale = Math.min(maxWidth / fimg.naturalWidth, maxHeight / fimg.naturalHeight);
+  viewer.style.width = `${Math.round(fimg.naturalWidth * scale)}px`;
+  viewer.style.height = `${Math.round(fimg.naturalHeight * scale)}px`;
+}
+fimg.addEventListener('load', fitFrameToPhoto);
+addEventListener('resize', fitFrameToPhoto);
+function openFrame(side) {
+  const photo = side === 'left' ? CONFIG.frameLeft : CONFIG.frameRight;
+  $('#f-title').textContent = side === 'left' ? '' : '';
+  F.s = 1; F.x = F.y = 0; applyF();
+  fimg.src = photo || ph(side === 'left' ? 'Foto Kiri' : 'Foto Kanan');
+  if (fimg.complete) fitFrameToPhoto();
+  show('frame');
+  viewer.classList.remove('zin'); void viewer.offsetWidth; viewer.classList.add('zin');
+}
+$('#o-frame').addEventListener('click', () => openFrame('left'));
+$('#o-frame-right').addEventListener('click', () => openFrame('right'));
+$('#o-frame-right').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openFrame('right'); }
+});
+$('#f-in').onclick = () => zoomF(1.4);
+$('#f-out').onclick = () => zoomF(1 / 1.4);
+viewer.addEventListener('wheel', e => { e.preventDefault(); zoomF(e.deltaY < 0 ? 1.15 : .87); }, { passive: false });
+viewer.addEventListener('dblclick', () => { F.s = F.s > 1 ? 1 : 2.5; applyF(); });
+viewer.addEventListener('pointerdown', e => { viewer.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, e); pinch = 0; });
+viewer.addEventListener('pointermove', e => {
+  if (!ptrs.has(e.pointerId)) return;
+  const prev = ptrs.get(e.pointerId); ptrs.set(e.pointerId, e);
+  if (ptrs.size === 2) {                                   // pinch di HP
+    const [a, b] = [...ptrs.values()], d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    if (pinch) zoomF(d / pinch); pinch = d;
+  } else if (F.s > 1) {                                    // geser saat di-zoom
+    F.x += e.clientX - prev.clientX; F.y += e.clientY - prev.clientY; applyF();
+  }
+});
+['pointerup', 'pointercancel'].forEach(t => viewer.addEventListener(t, e => { ptrs.delete(e.pointerId); pinch = 0; }));
+
+/* ---------- 5. PHOTOBOOTH ---------- */
+const vid = $('#vid'), resImg = $('#result'), count = $('#count'), bmsg = $('#bmsg');
+let stream, busy = false, lastURL = '';
+function stopCam() { if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; busy = false; vid.srcObject = null; }
+$('#o-booth').addEventListener('click', async () => {
+  show('booth'); resImg.hidden = true; vid.hidden = false; count.textContent = '';
+  $('#b-dl').disabled = true; lastURL = '';
+  vid.classList.toggle('mirror', CONFIG.mirrorPreview);
+  bmsg.textContent = 'Menyalakan kamera...';
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 960 } }, audio: false });
+    vid.srcObject = stream; bmsg.textContent = 'Siap! Tekan "start" untuk foto 3x.';
+  } catch (e) {
+    bmsg.textContent = 'Kamera tidak bisa dipakai. Izinkan akses kamera dan buka situs lewat HTTPS atau localhost.';
+  }
+});
+function snap() {
+  const vw = vid.videoWidth, vh = vid.videoHeight, r = 4 / 3;
+  let sw = vw, sh = vw / r; if (sh > vh) { sh = vh; sw = vh * r; }
+  const c = document.createElement('canvas'); c.width = 520; c.height = 390;
+  c.getContext('2d').drawImage(vid, (vw - sw) / 2, (vh - sh) / 2, sw, sh, 0, 0, 520, 390);   // tanpa flip = tidak mirror
+  return c;
+}
+let boothFramePromise;
+function loadBoothFrame() {
+  if (!boothFramePromise) {
+    boothFramePromise = new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(`Unable to load photobooth frame: ${CONFIG.assets.photoboothFrame}`));
+      image.src = CONFIG.assets.photoboothFrame;
+    });
+  }
+  return boothFramePromise;
+}
+function drawCover(context, image, x, y, width, height) {
+  const scale = Math.max(width / image.width, height / image.height);
+  const sourceWidth = width / scale, sourceHeight = height / scale;
+  const sourceX = (image.width - sourceWidth) / 2, sourceY = (image.height - sourceHeight) / 2;
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+}
+async function compose(shots) {
+  const frame = await loadBoothFrame();
+  const sourceFrame = { x: 610, y: 30, width: 272, height: 710 };
+  const W = 600, H = Math.round(W * sourceFrame.height / sourceFrame.width);
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const x = c.getContext('2d');
+  const slots = [
+    { x: 638, y: 115, width: 212, height: 136 },
+    { x: 638, y: 269, width: 212, height: 137 },
+    { x: 638, y: 424, width: 212, height: 137 }
+  ];
+  const overlay = document.createElement('canvas');
+  overlay.width = W;
+  overlay.height = H;
+  const frameContext = overlay.getContext('2d');
+  frameContext.drawImage(
+    frame,
+    sourceFrame.x, sourceFrame.y, sourceFrame.width, sourceFrame.height,
+    0, 0, W, H
+  );
+
+  slots.forEach((slot, i) => {
+    const xInFrame = (slot.x - sourceFrame.x) * W / sourceFrame.width;
+    const yInFrame = (slot.y - sourceFrame.y) * H / sourceFrame.height;
+    const slotWidth = slot.width * W / sourceFrame.width;
+    const slotHeight = slot.height * H / sourceFrame.height;
+    const bleed = 3;
+    const photoX = xInFrame - bleed;
+    const photoY = yInFrame - bleed;
+    const photoWidth = slotWidth + bleed * 2;
+    const photoHeight = slotHeight + bleed * 2;
+
+    drawCover(
+      x,
+      shots[i],
+      photoX, photoY, photoWidth, photoHeight
+    );
+    frameContext.globalCompositeOperation = 'destination-out';
+    frameContext.fillRect(
+      photoX, photoY, photoWidth, photoHeight
+    );
+    frameContext.globalCompositeOperation = 'source-over';
+  });
+  x.drawImage(overlay, 0, 0);
+  return c.toDataURL('image/png');
+}
+$('#b-start').addEventListener('click', async () => {
+  if (!stream || busy || !vid.videoWidth) return;
+  busy = true; $('#b-start').disabled = true; $('#b-dl').disabled = true;
+  resImg.hidden = true; vid.hidden = false;
+  const shots = [];
+  for (let i = 1; i <= 3; i++) {
+    bmsg.textContent = `Foto ${i} dari 3`;
+    for (let c = 3; c > 0; c--) { count.textContent = c; await wait(1000); if (!stream) return; }
+    count.textContent = '';
+    shots.push(snap());
+    const f = $('#flash'); f.classList.remove('on'); void f.offsetWidth; f.classList.add('on');
+    await wait(600); if (!stream) return;
+  }
+  try {
+    lastURL = await compose(shots);
+    resImg.src = lastURL; resImg.hidden = false; vid.hidden = true;
+    bmsg.textContent = 'Selesai! Tekan "download" atau "start" untuk ulang.';
+    $('#b-dl').disabled = false;
+  } catch (error) {
+    console.error('Photobooth composition failed:', error);
+    bmsg.textContent = 'Tidak bisa memuat frame photobooth. Periksa file img/photoboothframe.webp.';
+  } finally {
+    busy = false;
+    $('#b-start').disabled = false;
+  }
+});
+$('#b-dl').addEventListener('click', () => {
+  if (!lastURL) return;
+  const a = document.createElement('a'); a.href = lastURL; a.download = 'photobooth.png'; a.click();
+});
+
+/* ---------- 6. TURNTABLE (buka Spotify) ---------- */
+$('#songs').innerHTML = CONFIG.songs.map((s, i) => `<li><button data-i="${i}">▶ ${s.title}</button></li>`).join('');
+$('#songs').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  const s = CONFIG.songs[b.dataset.i];
+  window.open(s.url || 'https://open.spotify.com/search/' + encodeURIComponent(s.title), '_blank', 'noopener');
+});
+$('#o-table').addEventListener('click', () => show('table'));
+
+/* ---------- ONE WISH WILLOW ---------- */
+const wishForm = $('#wish-form'), wishText = $('#wish-text'), wishStatus = $('#wish-status');
+const wishVideo = $('#wish-break-video'), wishOverlay = $('#v-overlay');
+wishVideo.src = CONFIG.wishBreakVideo;
+let wishRevealTimer;
+function openWish() {
+  wishForm.reset();
+  wishStatus.textContent = '';
+  $('#wish-submit').disabled = false;
+  show('wish');
+  setTimeout(() => wishText.focus(), 0);
+}
+$('#o-wish').addEventListener('click', openWish);
+$('#o-wish').addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openWish(); }
+});
+function closeWishResult() {
+  clearTimeout(wishRevealTimer);
+  wishVideo.pause();
+  wishVideo.currentTime = 0;
+  wishOverlay.classList.remove('on', 'playing', 'flash', 'revealed', 'show-continue');
+}
+$('#wish-finish').addEventListener('click', () => { closeWishResult(); closeAll(); });
+function revealWishMessage() {
+  if (!wishOverlay.classList.contains('on') ||
+      wishOverlay.classList.contains('flash') ||
+      wishOverlay.classList.contains('revealed')) return;
+  wishOverlay.classList.remove('playing');
+  wishOverlay.classList.add('flash');
+  wishRevealTimer = setTimeout(() => {
+    wishOverlay.classList.remove('flash');
+    wishOverlay.classList.add('revealed');
+    wishRevealTimer = setTimeout(() => {
+      wishOverlay.classList.add('show-continue');
+      $('#wish-finish').focus();
+    }, 1150);
+  }, 700);
+}
+wishVideo.addEventListener('ended', revealWishMessage);
+wishForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const wish = wishText.value.trim();
+  if (!wish) {
+    wishStatus.textContent = 'Please write your wish first.';
+    wishText.focus();
+    return;
+  }
+  if (wish.length > 500) {
+    wishStatus.textContent = 'Please keep your wish under 500 characters.';
+    return;
+  }
+  const submit = $('#wish-submit');
+  submit.disabled = true;
+  $('#wish-save-feedback').textContent = '';
+  clearTimeout(wishRevealTimer);
+  wishOverlay.classList.remove('flash', 'revealed', 'show-continue');
+  wishOverlay.classList.add('on', 'playing');
+  wishVideo.currentTime = 0;
+  try {
+    await wishVideo.play();
+  } catch (error) {
+    console.error('Could not play the wish animation:', error);
+    $('#wish-save-feedback').textContent = 'Could not play the animation. Check that sfx/wood_break_3s.mp4 exists and can be played.';
+    revealWishMessage();
+  }
+
+  if (CONFIG.supabaseUrl.includes('YOUR_PROJECT_ID') || CONFIG.supabaseAnonKey === 'YOUR_SUPABASE_ANON_KEY') {
+    $('#wish-save-feedback').textContent = 'Animation playing. This wish was not saved because the database is not configured yet.';
+    return;
+  }
+
+  $('#wish-save-feedback').textContent = 'Saving your wish...';
+  try {
+    const response = await fetch(`${CONFIG.supabaseUrl.replace(/\/$/, '')}/rest/v1/wishes`, {
+      method: 'POST',
+      headers: {
+        'apikey': CONFIG.supabaseAnonKey,
+        'Authorization': `Bearer ${CONFIG.supabaseAnonKey}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({ wish })
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new Error(`Database returned ${response.status}: ${detail}`);
+    }
+    $('#wish-save-feedback').textContent = 'Your wish was saved.';
+  } catch (error) {
+    console.error('Could not save the wish:', error);
+    $('#wish-save-feedback').textContent = 'Animation playing, but the wish could not be saved. Check your database connection and try again later.';
+  }
+});
+</script>
+</body>
+</html>
